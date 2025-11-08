@@ -1,21 +1,20 @@
-// src/models/Event.js
 import { DataTypes } from "sequelize";
 import sequelize from "../config/database.js";
-import User from "./userModel.js"; // ✅ corrected import
 
 const Event = sequelize.define("Event", {
-  id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
-  title: { type: DataTypes.STRING, allowNull: false },
-  description: { type: DataTypes.TEXT, allowNull: true },
-  date: { type: DataTypes.DATE, allowNull: false },
-  location: { type: DataTypes.STRING, allowNull: true },
-  capacity: { type: DataTypes.INTEGER, defaultValue: 0 },
-  price: { type: DataTypes.FLOAT, defaultValue: 0.0 },
-  imageUrl: { type: DataTypes.STRING, allowNull: true }
+  organizer_name: DataTypes.STRING,
+  organizer_mobile: DataTypes.STRING,
+  organizer_role: DataTypes.STRING,
+  proof_file: DataTypes.STRING,
+  title: DataTypes.STRING,
+  description: DataTypes.TEXT,
+  date: DataTypes.DATEONLY,
+  time: DataTypes.STRING,
+  location: DataTypes.STRING,
+  price: DataTypes.FLOAT,
+  registration_deadline: DataTypes.DATEONLY,
+  event_link: DataTypes.STRING,
+  image: DataTypes.STRING,
 });
-
-// relations
-Event.belongsTo(User, { as: "organizer", foreignKey: "organizerId" });
-User.hasMany(Event, { foreignKey: "organizerId" });
 
 export default Event;

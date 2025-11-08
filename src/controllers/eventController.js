@@ -1,75 +1,70 @@
-// src/controllers/eventController.js
 import Event from "../models/Event.js";
-import { Op } from "sequelize";
+import multer from "multer";
+import path from "path";
 
-// List events with optional query (date, search, pagination)
-export const listEvents = async (req, res) => {
-  try {
-    const { q, date, page = 1, limit = 12 } = req.query;
-    const where = {};
-    if (q) where.title = { [Op.like]: `%${q}%` };
-    if (date) where.date = date; // prefer exact match or add range logic
+// File upload setup
+const storage = multer.diskStorage({
+  destination: "uploads/",
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + path.extname(file.originalname));
+  },
+});
+export const upload = multer({ storage });
 
-    const offset = (page - 1) * limit;
-    const { rows, count } = await Event.findAndCountAll({
-      where,
-      order: [["date", "ASC"]],
-      limit: +limit,
-      offset: +offset
-    });
-    res.json({ events: rows, total: count, page: +page });
-  } catch (err) {
-    res.status(500).json({ msg: "Failed to list events", error: err.message });
-  }
-};
-
-export const getEvent = async (req, res) => {
-  try {
-    const ev = await Event.findByPk(req.params.id);
-    if (!ev) return res.status(404).json({ msg: "Event not found" });
-    res.json(ev);
-  } catch (err) {
-    res.status(500).json({ msg: "Failed to get event", error: err.message });
-  }
-};
-
-// Organizer creates event
+// ✅ Create new event
 export const createEvent = async (req, res) => {
   try {
-    const data = req.body;
-    // attach organizerId from authenticated user
-    data.organizerId = req.user.id;
-    const created = await Event.create(data);
-    res.status(201).json({ msg: "Event created", event: created });
-  } catch (err) {
-    res.status(400).json({ msg: "Create failed", error: err.message });
+    const {
+      organizer_name,
+      organizer_mobile,
+      organizer_role,
+      title,
+      description,
+      date,
+      time,
+      location,
+      price,
+      registration_deadline,
+      event_link,
+    } = req.body;
+
+    const proof_file = req.files?.proof_file?.[0]?.filename || null;
+    const image = req.files?.image?.[0]?.filename || null;
+
+    const newEvent = await Event.create({
+      organizer_name,
+      organizer_mobile,
+      organizer_role,
+      proof_file,
+      title,
+      description,
+      date,
+      time,
+      location,
+      price,
+      registration_deadline,
+      event_link,
+      image,
+    });
+
+    res.status(201).json({ message: "✅ Event created successfully!", event: newEvent });
+  } catch (error) {
+    res.status(500).json({ message: "❌ Failed to create event", error: error.message });
   }
 };
 
-// Organizer updates event (only if owner or admin)
-export const updateEvent = async (req, res) => {
-  try {
-    const ev = await Event.findByPk(req.params.id);
-    if (!ev) return res.status(404).json({ msg: "Event not found" });
-    // only organizer or admin
-    if (ev.organizerId !== req.user.id && req.user.role !== "admin")
-      return res.status(403).json({ msg: "Not allowed" });
-    await ev.update(req.body);
-    res.json({ msg: "Event updated", event: ev });
-  } catch (err) {
-    res.status(400).json({ msg: "Update failed", error: err.message });
-  }
-};
-
+// 🔴 Delete event by ID
 export const deleteEvent = async (req, res) => {
   try {
-    const ev = await Event.findByPk(req.params.id);
-    if (!ev) return res.status(404).json({ msg: "Event not found" });
-    if (ev.organizerId !== req.user.id && req.user.role !== "admin")
-      return res.status(403).json({ msg: "Not allowed" });
-    await ev.destroy();
-    res.json({ msg: "Event deleted" });
-  } catch (err) {
-    res.status(500).json({ msg: "Delete failed", error: err.message });
+    const { id } = req.params;
+    const deleted = await Event.destroy({ where: { id } });
+
+    if (!deleted) {
+      return res.status(404).json({ message: "Event not found" });
+    }
+
+    res.status(200).json({ message: "🗑️ Event deleted successfully!" });
+  } catch (error) {
+    res.status(500).json({ message: "❌ Failed to delete event", error: error.message });
   }
 };

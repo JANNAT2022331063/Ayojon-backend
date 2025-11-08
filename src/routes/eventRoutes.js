@@ -1,12 +1,19 @@
 import express from "express";
-import { protect, organizerOnly } from "../middleware/auth.js";
-import { createEvent, updateEvent, deleteEvent, listEvents } from "../controllers/eventController.js";
+import { createEvent, deleteEvent, upload } from "../controllers/eventController.js";
 
 const router = express.Router();
 
-router.get("/", listEvents); // public
-router.post("/", protect, organizerOnly, createEvent);
-router.put("/:id", protect, organizerOnly, updateEvent);
-router.delete("/:id", protect, organizerOnly, deleteEvent);
+// Create Event
+router.post(
+  "/",
+  upload.fields([
+    { name: "proof_file", maxCount: 1 },
+    { name: "image", maxCount: 1 },
+  ]),
+  createEvent
+);
+
+// Delete Event
+router.delete("/:id", deleteEvent);
 
 export default router;
